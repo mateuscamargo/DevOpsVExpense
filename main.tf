@@ -137,10 +137,14 @@ resource "aws_instance" "debian_ec2" {
 
   user_data = <<-EOF
               #!/bin/bash
+              set -e
               apt-get update -y
               apt-get upgrade -y
+              apt-get install -y nginx
+              systemctl start nginx
+              systemctl enable nginx
+              echo "<h1>Servidor Nginx Configurado com Sucesso</h1>" > /var/www/html/index.html
               EOF
-
   tags = {
     Name = "${var.projeto}-${var.candidato}-ec2"
   }
