@@ -14,6 +14,12 @@ variable "candidato" {
   default     = "SeuNome"
 }
 
+variable "trusted_ip" {
+  description = "Endereço IP confiável para acesso SSH"
+  type        = string
+  default     = "192.168.1.1/32"  # Substitua pelo IP confiável
+}
+
 resource "tls_private_key" "ec2_key" {
   algorithm = "RSA"
   rsa_bits  = 4096
@@ -76,17 +82,32 @@ resource "aws_route_table_association" "main_association" {
 
 resource "aws_security_group" "main_sg" {
   name        = "${var.projeto}-${var.candidato}-sg"
-  description = "Permitir SSH de qualquer lugar e todo o tráfego de saída"
+  description = "Permitir SSH de IP confiável e tráfego HTTP/HTTPS"
   vpc_id      = aws_vpc.main_vpc.id
 
   # Regras de entrada
   ingress {
-    description      = "Allow SSH from anywhere"
-    from_port        = 22
-    to_port          = 22
-    protocol         = "tcp"
-    cidr_blocks      = ["0.0.0.0/0"]
-    ipv6_cidr_blocks = ["::/0"]
+    description = "Allow SSH from trusted IP"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.confiavel_ip]
+  }
+
+  ingress {
+    description = "Allow HTTP traffic"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "Allow HTTPS traffic"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   # Regras de saída
@@ -132,6 +153,7 @@ resource "aws_instance" "debian_ec2" {
   root_block_device {
     volume_size           = 20
     volume_type           = "gp2"
+    encrypted             = true  #Criptografia do volume EBS
     delete_on_termination = true
   }
 
@@ -140,11 +162,19 @@ resource "aws_instance" "debian_ec2" {
               set -e
               apt-get update -y
               apt-get upgrade -y
-              apt-get install -y nginx
+              apt-get install -y nginx ufw
+
+              # Configuração do UFW
+              ufw allow ssh
+              ufw allow http
+              ufw allow https
+              ufw --force enable
+
               systemctl start nginx
               systemctl enable nginx
               echo "<h1>Servidor Nginx Configurado com Sucesso</h1>" > /var/www/html/index.html
               EOF
+
   tags = {
     Name = "${var.projeto}-${var.candidato}-ec2"
   }
