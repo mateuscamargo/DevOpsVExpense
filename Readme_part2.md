@@ -55,7 +55,14 @@ No recurso **tls_private_key** o parâmetro **rsa_bits** foi alterado para utili
 ---
 ### 4.1 - Recurso Instância EC2
 
-No recurso ** aws_instance**  foi adicionado o parâmetro **encrypted** fazendo com que o volume definido para a instância seja criptografado em repouso e garantindo que os dados fiquem seguros quando a instância estiver em repouso.
+No recurso ** aws_instance** e no bloco do **root_block_device**  foi adicionado o parâmetro **encrypted** fazendo com que o volume definido para a instância seja criptografado em repouso e garantindo que os dados fiquem seguros quando a instância estiver em repouso.
+
+    root_block_device {
+        volume_size           = 20
+        volume_type           = "gp2"
+        encrypted             = true  #Criptografia do volume EBS
+        delete_on_termination = true
+      }
 
 ---
 ### 4.2 - Recurso Instância EC2
